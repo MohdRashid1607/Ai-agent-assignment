@@ -1,5 +1,13 @@
 # Security and Cost Note
 
+## Region, model, and runtime record
+
+Per the assignment's rule to record region, model, and runtime used:
+- **Model:** Gemini 3.6 Flash (`gemini-3.6-flash`), Google's Gemini API, free tier
+- **Runtime:** GitHub Codespaces (cloud VM), Python 3.12.14
+- **Region:** not explicitly pinned or confirmed for either GitHub Codespaces or the Gemini API in this prototype — both were used via their general-availability endpoints without selecting a specific region. This is disclosed as a gap: a production deployment with data residency requirements would need to explicitly confirm and pin the region for both the compute (Codespaces/hosting) and the model API call (e.g. via Vertex AI's regional endpoints for Gemini, rather than the general API used here).
+- **Paid features used:** none — Codespaces free tier, Copilot Free tier, Gemini API free tier, Open-Meteo and Frankfurter (both fully free/keyless) were used throughout.
+
 ## Data flow
 
 **Level 1 (To-Do CLI):** self-contained, in-memory app. No external network calls, no persistence, no secrets. Synthetic task data only ("Buy groceries", etc.).

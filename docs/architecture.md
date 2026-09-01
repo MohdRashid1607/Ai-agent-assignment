@@ -60,6 +60,15 @@ The To-Do CLI is deterministic, rule-based code (`if/elif` branches). Copilot he
                                   [printed to user + logged:
                                    request, tool selected, tool input,
                                    tool result, final answer, latency]
+
+                                            |
+                                            | (not yet live - see
+                                            |  Deployment plan below)
+                                            v
+                                  [Deployment target: containerized
+                                   Flask endpoint (app.py + Dockerfile),
+                                   e.g. Azure Container Apps - defined,
+                                   not deployed in this submission]
 ```
 
 ## Plain-language explanation

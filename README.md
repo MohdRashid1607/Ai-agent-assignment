@@ -17,7 +17,7 @@ A command-line To-Do List manager: add a task, list tasks, mark a task complete,
 
 **Run:**
 ```
-python3 todo.py
+python3 src/todo.py
 ```
 
 **Test:**
@@ -46,7 +46,7 @@ A real AI agent: given a natural-language question, **Gemini 3.6 Flash decides a
 
 **Run:**
 ```
-python3 agent.py
+python3 src/agent.py
 ```
 Type a question (e.g. "What's the weather in Dubai?" or "What is 5 + 5?"), or `exit` to quit. Each run prints the request, which tool (if any) was selected, the tool's input/output, the final answer, and latency.
 
@@ -74,7 +74,7 @@ The Level 2 agent was extended with a **second tool**, turning it into a real or
 
 **Run (same agent, now with 2 tools):**
 ```
-python3 agent.py
+python3 src/agent.py
 ```
 Try: `What's the weather in Tokyo?` or `Convert 100 USD to EUR` or `What is 5+5?` (no tool needed).
 
