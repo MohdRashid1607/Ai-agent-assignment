@@ -79,7 +79,7 @@ def test_successful_weather_request(monkeypatch):
     first_call = fake_client.interactions.calls[0]
 
     assert first_call["model"] == agent.MODEL
-    assert first_call["tools"] == [agent.WEATHER_TOOL]
+    assert first_call["tools"] == agent.TOOLS
 
 
 def test_weather_tool_error(monkeypatch):
