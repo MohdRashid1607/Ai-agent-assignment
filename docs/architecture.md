@@ -1,48 +1,86 @@
-# Architecture — Level 1 Prototype
+# Architecture
 
-## Diagram (text form — redraw as an image for the final submission if preferred)
+## Level 1 — Coding-assistant-built CLI app
 
 ```
 [You, browser]
       |
-      | HTTPS
       v
-[GitHub.com] --------------------------------+
-      |                                       |
-      | opens                                 | stores
-      v                                       v
-[GitHub Codespace]                      [Git Repository]
-  (cloud VM, browser-based VS Code)      (todo.py, tests/, docs/,
-      |                                   requirements.txt, .gitignore)
-      | runs
+[GitHub.com] ---------------------------------+
+      |                                        |
+      | opens                                  | stores
+      v                                        v
+[GitHub Codespace]                       [Git Repository]
+  (cloud VM, browser VS Code)             (todo.py, tests/, docs/)
+      |
       v
 [Python 3.12 runtime, in-VM]
       |
       | assisted by
       v
-[GitHub Copilot Free]
-  (suggests code inline + via Chat,
-   billed against Anthropic/OpenAI-class
-   model behind GitHub's own service)
+[GitHub Copilot Free]  (suggests code; not present at runtime)
+```
+The To-Do CLI is deterministic, rule-based code (`if/elif` branches). Copilot helped *write* it but is not involved when it *runs*. No AI component executes at runtime in Level 1.
+
+## Level 2 — Tool-calling weather agent
+
+```
+[You, terminal in Codespace]
+        |
+        | text question
+        v
+[agent.py - run_agent()]
+        |
+        | interaction.create(model, input, tools=[WEATHER_TOOL])
+        v
+[Gemini 3.6 Flash]  <-- authenticated via GEMINI_API_KEY (Codespaces secret)
+        |
+        | model decides: answer directly, OR call a tool
+        v
+   +---------+-----------------------------+
+   | no tool needed                        | tool call: get_weather(city)
+   v                                        v
+[Gemini answers directly]          [weather_tool.py]
+                                            |
+                                            | HTTPS, keyless
+                                            v
+                                  [Open-Meteo geocoding + forecast APIs]
+                                            |
+                                            v
+                                  structured result: {status, city,
+                                  temperature_c, windspeed_kmh, ...}
+                                  OR {status: "error", reason: ...}
+                                            |
+                                            | sent back via
+                                            | previous_interaction_id
+                                            v
+                                  [Gemini 3.6 Flash - final answer]
+                                            |
+                                            v
+                                  [printed to user + logged:
+                                   request, tool selected, tool input,
+                                   tool result, final answer, latency]
 ```
 
 ## Plain-language explanation
 
-**Where the code runs:** Inside the GitHub Codespace — a temporary cloud virtual machine that GitHub provisions on demand. When you ran `python3 todo.py`, execution happened entirely on that remote VM, not on your local laptop. Your browser is just a window into it (via VS Code's web UI).
+**Where the code runs:** Inside the same GitHub Codespace VM as Level 1 - `agent.py` executes as a normal Python process in that cloud VM, not on your local machine.
 
-**Where the code is stored:** In the GitHub repository (`Ai-agent-assignment`), which is separate from the Codespace VM itself. The VM is ephemeral — if deleted, your code is safe as long as it's committed and pushed to GitHub, which is why we ran `git add`, `git commit`, `git push` after every meaningful change.
+**Where the AI model runs:** Gemini 3.6 Flash runs on Google's infrastructure, not in the Codespace. `agent.py` sends the user's text to Gemini's API over HTTPS and receives back either a direct answer or a tool-call instruction - the model itself is remote.
 
-**Is the coding assistant "agentic," or is the app itself agentic?**
-- **GitHub Copilot (the assistant)** shows agent-*like* behavior: it can read surrounding code/comments, generate multi-line completions, and (in Chat/Agent mode) propose multi-file changes — but in this Level 1 prototype we only used it for single-function completions and manual correction, not autonomous multi-step execution.
-- **The To-Do app itself is NOT agentic.** It is a deterministic, rule-based CLI program: given input, it runs fixed branches of code (`if/elif`) with no planning, no tool-calling, and no model inference at runtime. It doesn't decide anything — it just executes what was typed.
-- The distinction matters for the assignment's Section 10 question ("difference between the coding agent and the agent you built") — at Level 1 we did not build an agent at all; Copilot was the only AI component involved, used purely as a coding assistant during development, not at runtime.
+**Where the tool runs:** `get_weather()` executes locally, inside the Codespace, as plain Python - it makes its own separate HTTPS calls to Open-Meteo (a different, unrelated service from Gemini). The result is sent back to Gemini as text so the model can compose a final natural-language answer.
+
+**Is this actually agentic, unlike Level 1?** Yes - this is the key difference the assignment is testing for. Gemini decides *at runtime, per request* whether a tool is needed at all (a math or greeting question gets answered directly; a weather question triggers a tool call) - that decision is not hardcoded by the developer. Level 1's Copilot never runs at request-time and never decides anything; it only assisted during development.
+
+**Where the secret lives:** `GEMINI_API_KEY` is stored as a GitHub Codespaces repository secret (Settings -> Codespaces -> repository secrets), injected into the Codespace as an environment variable at container start. It is never committed to the repository, never hardcoded in `agent.py` (the code reads it via `os.getenv("GEMINI_API_KEY")` and raises a clear error if missing, rather than failing silently or falling back to a hardcoded value).
 
 ## Components mapped to the assignment's required layers
 
-| Layer | Component in this prototype |
-|---|---|
-| Cloud workspace | GitHub Codespaces (this repo) |
-| Coding agent | GitHub Copilot Free (inline suggestions + Chat) |
-| Agent SDK/runtime | Not applicable at Level 1 — no runtime agent was built |
-| Delivery | Git commit/push to GitHub; `requirements.txt` for dependency pinning |
-| Enterprise controls | Not exercised at Level 1 (no IAM/secrets were needed — app has no external calls or credentials) |
+| Layer | Level 1 | Level 2 |
+|---|---|---|
+| Cloud workspace | GitHub Codespaces | GitHub Codespaces (same repo) |
+| Coding agent | GitHub Copilot Free (dev-time only) | GitHub Copilot Free (dev-time only) |
+| Agent runtime | Not applicable | Gemini 3.6 Flash via `google-genai` SDK, tool-calling loop in `agent.py` |
+| Tool | None | `weather_tool.py` -> Open-Meteo (keyless, public) |
+| Secrets | None needed | `GEMINI_API_KEY` as a Codespaces repository secret |
+| Delivery | Git commit/push | Git commit/push; `requirements.txt` pins `google-genai`, `requests`, `pytest` |
