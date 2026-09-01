@@ -68,3 +68,4 @@ curl -X POST http://localhost:8080/ask -H "Content-Type: application/json" -d '{
 5. No centralized observability/tracing beyond console logs
 6. No persistent conversation memory across turns (stateless per-request design, disclosed as intentional scope, not a bug)
 7. Threat modeling is informal/manual, not a formal red-team or automated adversarial test suite
+8. **Latency variance observed but not investigated:** runtime evidence showed request latency ranging from ~12s to ~52s across different runs and tools, with no clear pattern isolated (model queueing, network variability, and cold-start effects are all plausible but unconfirmed causes). A production deployment would need latency monitoring and a defined SLA before this variance could be called acceptable or not.
