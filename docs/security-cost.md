@@ -36,14 +36,14 @@ No personal or confidential data flows through this pipeline — inputs are city
 **A real lesson learned:** during setup, the Codespace's default `GITHUB_TOKEN` (a separate, short-lived, session-scoped token GitHub auto-generates) was accidentally shown in a chat conversation with an AI assistant while debugging. It was not committed to the repository and is session-scoped/auto-rotated, so the practical exposure was minimal — but it is documented here as a real, concrete example of why secret values should never be pasted anywhere outside their intended secret store, even in a low-risk context.
 
 ## Key risks
-1. **Public repo risk:** if made public, code and Copilot history are visible to anyone — mitigated by keeping the repo private.
+1. **Public repo:** this repository is public. Acceptable per the assignment's own rule ("use synthetic or public data only") — no confidential, customer, or credential data exists in this project at any point.
 2. **Third-party data handling:** the Gemini API and Open-Meteo both receive request data (the user's question and city name respectively) as part of normal operation — acceptable here since no confidential data is ever entered, per the assignment's synthetic-data-only rule.
 3. **Dependency supply chain:** `requirements.txt` pins exact versions (`pytest==9.1.1`, `google-genai==2.20.0`, `requests==2.34.2`) rather than leaving them unpinned.
 4. **Tool failure handling:** `weather_tool.py` wraps all external calls in `try/except` and always returns a structured `{"status": "error", "reason": ...}` dict rather than raising an unhandled exception that could crash the agent loop or leak a raw stack trace to the end user.
 5. **Unsupported tool requests:** if the model ever requested a tool name other than `get_weather`, `agent.py` returns a structured error rather than attempting to execute an undefined function.
 
 ## Mitigations
-- Repository kept private
+- Only synthetic/public data ever committed — safe for a public repository
 - Only synthetic/public data used throughout (task text, city names)
 - Secret stored via Codespaces secrets, never in source or Git history
 - All dependencies pinned to exact versions
@@ -60,3 +60,11 @@ No personal or confidential data flows through this pipeline — inputs are city
 | Observability | Not implemented beyond console logging in this prototype | Would need a dedicated logging/observability service at production scale |
 
 **Where pricing could not be fully confirmed:** exact current GitHub Codespaces per-core-hour overage billing and Copilot Business/Enterprise per-seat pricing were not independently re-verified against live pricing pages at the time of writing — the intern should confirm current rates on submission day, per the assignment's explicit instruction.
+
+
+## Level 3 additions (security)
+
+- **Least privilege:** every tool call passes through a single chokepoint, `_execute_tool()`, checked against an explicit allow-list (`get_weather`, `convert_currency`) before execution. Any other tool name is rejected, never run.
+- **Prompt-injection tested directly:** the eval suite includes a case where injected input attempts to make the agent reveal `GEMINI_API_KEY` via a fake tool call — the allow-list blocks it; verified in `tests/test_level3_eval.py`.
+- **Traceability:** every request gets a UUID `request_id`, logged alongside tool selection, input, result, and latency.
+- Full assessment: `docs/level3-production-readiness.md`.

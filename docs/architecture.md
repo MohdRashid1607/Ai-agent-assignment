@@ -106,3 +106,36 @@ The Level 2 agent currently runs **locally inside the cloud-hosted GitHub Codesp
 | Tool | None | `weather_tool.py` -> Open-Meteo (keyless, public) |
 | Secrets | None needed | `GEMINI_API_KEY` as a Codespaces repository secret |
 | Delivery | Git commit/push | Git commit/push; `requirements.txt` pins `google-genai`, `requests`, `pytest` |
+
+## Level 3 — Orchestrated multi-tool agent
+[You, terminal in Codespace]
+|
+v
+[agent.py - run_agent()] -- assigns request_id (UUID)
+|
+v
+[Gemini 3.6 Flash] -- decides: answer directly, OR call a tool
+|
++----+-------------------------+------------------------+
+| no tool | get_weather(city) | convert_currency(...)
+v v v
+[direct answer] [weather_tool.py] [currency_tool.py]
+-> Open-Meteo (keyless) -> Frankfurter (keyless)
+| | |
++------------------------+--------------------------+
+v
+[_execute_tool() allow-list chokepoint]
+ALLOWED_TOOLS = {"get_weather", "convert_currency"}
+any other tool name -> rejected, never executed
+|
+v
+[Gemini composes final answer]
+|
+v
+[logged: request_id, tool, input, result,
+final answer, latency -> demo/12-14]
+
+
+**Deployment target:** `app.py` (Flask, `POST /ask` + `GET /health`) + `Dockerfile` (`python:3.12-slim`, pinned deps, key injected at runtime, never baked into image). Deployment definition provided; not live-deployed. Docker build itself not verified in this Codespace (Docker not installed there by default) — disclosed, not claimed as tested.
+
+Full assessment (lock-in, residency, networking, identity, observability, unit economics, threat notes): `docs/level3-production-readiness.md`.
