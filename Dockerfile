@@ -11,7 +11,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY agent.py weather_tool.py currency_tool.py app.py ./
+COPY src/agent.py src/weather_tool.py src/currency_tool.py src/app.py ./
 
 # GEMINI_API_KEY must be injected at run time (docker run -e, or the
 # hosting platform's secret manager) - never baked into the image.
