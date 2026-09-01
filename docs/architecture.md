@@ -74,6 +74,19 @@ The To-Do CLI is deterministic, rule-based code (`if/elif` branches). Copilot he
 
 **Where the secret lives:** `GEMINI_API_KEY` is stored as a GitHub Codespaces repository secret (Settings -> Codespaces -> repository secrets), injected into the Codespace as an environment variable at container start. It is never committed to the repository, never hardcoded in `agent.py` (the code reads it via `os.getenv("GEMINI_API_KEY")` and raises a clear error if missing, rather than failing silently or falling back to a hardcoded value).
 
+## Deployment plan
+
+The Level 2 agent currently runs **locally inside the cloud-hosted GitHub Codespace** (a terminal-based CLI loop), not behind a deployed public HTTP endpoint. This is explicitly permitted by the assignment when the selected trial/tier doesn't readily support endpoint deployment — the free tiers used here (Codespaces, Gemini API free tier) are oriented around interactive/dev use, not production hosting.
+
+**Why not deployed now:** exposing a public endpoint would require either (a) a paid hosting tier (Azure App Service, Cloud Run, etc.) with its own cost and IAM setup, or (b) keeping the Codespace running continuously and exposing its port publicly — both add real cost and security surface area (a public endpoint calling a paid API needs its own auth, rate-limiting, and abuse protection) that isn't justified for a Level 2 prototype demo.
+
+**If deployment were required next:**
+1. Wrap `agent.py`'s `run_agent()` function in a minimal Flask or FastAPI app with a single `POST /ask` endpoint.
+2. Deploy that app to a free/low-cost container host (e.g. Azure Container Apps consumption tier, Google Cloud Run free tier, or Render's free web service tier) — to keep consistent with the Microsoft-first stack, Azure Container Apps would be the first choice to trial.
+3. Move `GEMINI_API_KEY` from a Codespaces secret to that platform's equivalent secret manager (e.g. Azure Key Vault reference or Container Apps secret) — same principle, different vault.
+4. Add basic rate-limiting and input validation at the endpoint layer before accepting public traffic, since a public endpoint calling a metered external API needs abuse protection that a local CLI tool run by a single trusted user does not.
+5. Re-run the same 3+ test scenarios against the deployed endpoint (not just the local function) to confirm parity.
+
 ## Components mapped to the assignment's required layers
 
 | Layer | Level 1 | Level 2 |
